@@ -1,0 +1,32 @@
+[package]
+name = "skillkit"
+description = "CLI for the agent-skill economy: lint, package, verify, audit SKILL.md skills"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "skillkit"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+cas-kit.workspace = true
+clap.workspace = true
+fetch-kit.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+signalkit-integrity.workspace = true
+skillkit-core.workspace = true
+skillkit-store.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,19 @@
+[package]
+name = "skillkit-core"
+description = "Strict SKILL.md parsing and linting: typed manifest, unknown-field denial"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+[lints]
+workspace = true

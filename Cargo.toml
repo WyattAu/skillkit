@@ -1,0 +1,48 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+exit = "deny"
+modulo_arithmetic = "warn"
+redundant_clone = "warn"
+unused_async = "warn"
+if_not_else = "warn"
+cognitive_complexity = "allow"
+too_many_arguments = "warn"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.95"
+authors = ["Wyatt Au"]
+license = "Apache-2.0"
+description = "Tooling for the agent-skill economy: lint, package, verify, audit SKILL.md skills"
+repository = "https://github.com/WyattAu/skillkit"
+homepage = "https://github.com/WyattAu/skillkit"
+readme = "README.md"
+keywords = ["agents", "skills", "cli", "validation"]
+categories = ["development-tools", "command-line-utilities"]
+
+[workspace.dependencies]
+skillkit-core = { path = "crates/skillkit-core", version = "0.1.0" }
+skillkit-store = { path = "crates/skillkit-store", version = "0.1.0" }
+signalkit-integrity = { path = "../signalkit/crates/signalkit-integrity", version = "0.1.0" }
+anyhow = "1"
+cas-kit = "0.2"
+clap = { version = "4", features = ["derive"] }
+fetch-kit = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[profile.release]
+lto = "thin"
