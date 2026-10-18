@@ -50,6 +50,13 @@ enum Command {
     },
 }
 
+/// Resolve the GitHub token for audit calls: `GH_TOKEN` env when set.
+fn github_token() -> Option<String> {
+    std::env::var("GH_TOKEN")
+        .ok()
+        .filter(|t| !t.trim().is_empty())
+}
+
 #[tokio::main]
 async fn main() -> ExitCode {
     let cli = Cli::parse();
@@ -123,7 +130,7 @@ async fn run(command: Command) -> anyhow::Result<usize> {
             Ok(0)
         }
         Command::Audit { repo, min_stars } => {
-            let report = audit::audit_repo(&repo, min_stars).await?;
+            let report = audit::audit_repo(&repo, min_stars, github_token().as_deref()).await?;
             println!("{}", report.render());
             Ok(0)
         }

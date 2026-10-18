@@ -39,17 +39,22 @@ pub struct AuditReport {
     pub fork_ratio_pct: f64,
 }
 
-/// Fetch current stats for `owner/repo`.
+/// Fetch current stats for `owner/repo`; `token` upgrades the 60 req/h
+/// anonymous limit to 5,000 req/h.
 ///
 /// # Errors
 /// Fails on transport errors and non-2xx responses.
-pub async fn fetch_repo_stats(repo: &str) -> anyhow::Result<RepoStats> {
+pub async fn fetch_repo_stats(repo: &str, token: Option<&str>) -> anyhow::Result<RepoStats> {
     let client = fetch_kit::Client::builder()
         .user_agent("skillkit/0.1")
         .default_header("accept", "application/vnd.github+json")
         .build();
     let url = format!("https://api.github.com/repos/{repo}");
-    let mut stats: RepoStats = client.get(&url).json_response().await?;
+    let mut request = client.get(&url);
+    if let Some(t) = token {
+        request = request.bearer_auth(t);
+    }
+    let mut stats: RepoStats = request.json_response().await?;
     stats.age_days = age_in_days(&stats.created_at, current_epoch_days());
     Ok(stats)
 }
@@ -91,8 +96,12 @@ fn current_epoch_days() -> i64 {
 ///
 /// # Errors
 /// Fails on fetch errors; verdicts never fail.
-pub async fn audit_repo(repo: &str, min_stars: i64) -> anyhow::Result<AuditReport> {
-    let stats = fetch_repo_stats(repo).await?;
+pub async fn audit_repo(
+    repo: &str,
+    min_stars: i64,
+    token: Option<&str>,
+) -> anyhow::Result<AuditReport> {
+    let stats = fetch_repo_stats(repo, token).await?;
     let fork_ratio_pct = if stats.stargazers_count > 0 {
         stats.forks_count as f64 * 100.0 / stats.stargazers_count as f64
     } else {
