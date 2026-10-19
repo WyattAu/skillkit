@@ -42,11 +42,16 @@ enum Command {
     },
     /// Audit a GitHub repo for engagement-integrity signals.
     Audit {
-        /// `owner/repo` to audit.
+        /// `owner/repo` to audit (single mode), or the marketplace index
+        /// repo when `--batch` is given.
         repo: String,
         /// Minimum stars before fork-ratio is judged.
         #[arg(long, default_value_t = 200)]
         min_stars: i64,
+        /// Batch mode: audit every repo-plugin in this marketplace repo's
+        /// `.claude-plugin/marketplace.json`.
+        #[arg(long)]
+        batch: bool,
     },
 }
 
@@ -129,7 +134,18 @@ async fn run(command: Command) -> anyhow::Result<usize> {
             );
             Ok(0)
         }
-        Command::Audit { repo, min_stars } => {
+        Command::Audit {
+            repo,
+            min_stars,
+            batch,
+        } => {
+            if batch {
+                let body = audit::fetch_marketplace_json(&repo, github_token().as_deref()).await?;
+                let report =
+                    audit::audit_batch(&body, min_stars, github_token().as_deref()).await?;
+                print!("{}", report.render());
+                return Ok(0);
+            }
             let report = audit::audit_repo(&repo, min_stars, github_token().as_deref()).await?;
             println!("{}", report.render());
             Ok(0)

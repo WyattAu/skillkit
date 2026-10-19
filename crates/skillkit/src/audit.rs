@@ -143,6 +143,216 @@ impl AuditReport {
     }
 }
 
+/// Extract GitHub `owner/repo` candidates from a marketplace.json body.
+///
+/// Handles both string sources (`"owner/repo"`) and object sources with a
+/// `repo` field (`{"source": "git-subdir", "repo": "owner/repo"}`).
+/// Real shapes (anthropics/claude-plugins-official): string "owner/repo",
+/// `{source: "git-subdir", url: "...github.com/o/r.git", path: ...}`,
+/// `{source: "url", url: ...}` — relative-dir sources are skipped.
+/// Returns `(repos, total plugin entries)`.
+#[must_use]
+pub fn parse_marketplace_repos(json: &str) -> (Vec<String>, usize) {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(json) else {
+        return (Vec::new(), 0);
+    };
+    let Some(plugins) = value.get("plugins").and_then(|p| p.as_array()) else {
+        return (Vec::new(), 0);
+    };
+    let total = plugins.len();
+    let mut out: Vec<String> = Vec::new();
+    for plugin in plugins {
+        let candidate = match plugin.get("source") {
+            Some(serde_json::Value::String(s)) => Some(s.clone()),
+            Some(source) => source
+                .get("repo")
+                .and_then(|r| r.as_str())
+                .map(str::to_owned)
+                .or_else(|| {
+                    source
+                        .get("url")
+                        .and_then(|u| u.as_str())
+                        .and_then(github_repo_from_url)
+                }),
+            None => None,
+        };
+        if let Some(repo) = candidate {
+            let parts: Vec<&str> = repo.split('/').collect();
+            if parts.len() == 2
+                && parts.iter().all(|p| !p.is_empty())
+                && !repo.starts_with('.')
+                && !repo.starts_with('/')
+                && repo
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || "-._/".contains(c))
+                && !out.contains(&repo)
+            {
+                out.push(repo);
+            }
+        }
+    }
+    (out, total)
+}
+
+/// `https://github.com/{owner}/{repo}(.git)?` -> `owner/repo`.
+fn github_repo_from_url(url: &str) -> Option<String> {
+    let rest = url.strip_prefix("https://github.com/")?;
+    let mut parts = rest.split('/');
+    let owner = parts.next()?;
+    let repo = parts.next()?;
+    let repo = repo.strip_suffix(".git").unwrap_or(repo);
+    if owner.is_empty() || repo.is_empty() {
+        return None;
+    }
+    Some(format!("{owner}/{repo}"))
+}
+
+/// Fetch a marketplace index from a GitHub repo, trying the standard
+/// locations (contents API returns base64 for JSON files).
+///
+/// # Errors
+/// Fails when both known locations return errors.
+pub async fn fetch_marketplace_json(repo: &str, token: Option<&str>) -> anyhow::Result<String> {
+    let client = fetch_kit::Client::builder()
+        .user_agent("skillkit/0.1")
+        .default_header("accept", "application/vnd.github+json")
+        .build();
+    for path in [".claude-plugin/marketplace.json", "marketplace.json"] {
+        let url = format!("https://api.github.com/repos/{repo}/contents/{path}");
+        let mut request = client.get(&url);
+        if let Some(t) = token {
+            request = request.bearer_auth(t);
+        }
+        let response: serde_json::Value = match request.json_response().await {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        if let Some(content) = response.get("content").and_then(|c| c.as_str()) {
+            let cleaned: String = content.chars().filter(|c| !c.is_whitespace()).collect();
+            use base64::Engine;
+            let decoded = base64::engine::general_purpose::STANDARD
+                .decode(cleaned)
+                .map_err(|e| anyhow::anyhow!("marketplace base64 decode failed: {e}"))?;
+            return Ok(String::from_utf8_lossy(&decoded).into_owned());
+        }
+    }
+    anyhow::bail!("no marketplace.json found in {repo}")
+}
+
+/// The finished batch audit.
+pub struct BatchReport {
+    /// Total plugin entries in the index (some are relative-dir, not repos).
+    pub total_entries: usize,
+    /// Audited repos, strongest verdicts first.
+    pub audited: Vec<AuditReport>,
+    /// Repos that failed to fetch: (repo, error).
+    pub failed: Vec<(String, String)>,
+}
+
+impl BatchReport {
+    /// Render the batch report.
+    #[must_use]
+    pub fn render(&self) -> String {
+        let mut out = String::new();
+        let elevated = self
+            .audited
+            .iter()
+            .filter(|r| r.verdict == signalkit_integrity::ForkVerdict::Elevated)
+            .count();
+        let extreme = self
+            .audited
+            .iter()
+            .filter(|r| r.verdict == signalkit_integrity::ForkVerdict::Extreme)
+            .count();
+        out.push_str(&format!(
+            "batch audit: {} of {} entries audited, {} elevated, {} extreme, {} fetch-failed\n",
+            self.audited.len(),
+            self.total_entries,
+            elevated,
+            extreme,
+            self.failed.len()
+        ));
+        out.push_str(
+            "Verdicts are heuristic fork-ratio signals (min-stars floored); evidence below.\n",
+        );
+        let mut rows: Vec<&AuditReport> = self
+            .audited
+            .iter()
+            // Display floor: sub-min_stars repos have meaningless ratios
+            // and would bury the real signals under 400%-of-1-star noise.
+            .filter(|r| r.stats.stargazers_count >= 200)
+            .collect();
+        let verdict_rank = |v: signalkit_integrity::ForkVerdict| match v {
+            signalkit_integrity::ForkVerdict::Extreme => 0,
+            signalkit_integrity::ForkVerdict::Elevated => 1,
+            signalkit_integrity::ForkVerdict::Normal => 2,
+        };
+        rows.sort_by_key(|r| {
+            (
+                verdict_rank(r.verdict),
+                std::cmp::Reverse((r.fork_ratio_pct * 100.0) as i64),
+            )
+        });
+        for r in rows {
+            let tag = match r.verdict {
+                signalkit_integrity::ForkVerdict::Extreme => "EXTREME",
+                signalkit_integrity::ForkVerdict::Elevated => "elevated",
+                signalkit_integrity::ForkVerdict::Normal => "normal",
+            };
+            out.push_str(&format!(
+                "  {:<8} {:>7}\u{2605} {:>6} forks ({:>5.1}%)  {}\n",
+                tag, r.stats.stargazers_count, r.stats.forks_count, r.fork_ratio_pct, r.repo
+            ));
+        }
+        for (repo, err) in &self.failed {
+            out.push_str(&format!("  failed    {repo}: {err}\n"));
+        }
+        out
+    }
+}
+
+/// Audit every GitHub-repo plugin in a marketplace body.
+///
+/// # Errors
+/// Fails when `body` has no parseable plugins array.
+pub async fn audit_batch(
+    body: &str,
+    min_stars: i64,
+    token: Option<&str>,
+) -> anyhow::Result<BatchReport> {
+    let (repos, total_entries) = parse_marketplace_repos(body);
+    if repos.is_empty() {
+        anyhow::bail!("no auditable GitHub repos found in marketplace index");
+    }
+    let mut audited = Vec::new();
+    let mut failed = Vec::new();
+    for repo in &repos {
+        match fetch_repo_stats(repo, token).await {
+            Ok(stats) => {
+                let fork_ratio_pct =
+                    stats.forks_count as f64 * 100.0 / stats.stargazers_count.max(1) as f64;
+                let verdict = signalkit_integrity::fork_verdict(
+                    stats.stargazers_count,
+                    stats.forks_count,
+                    min_stars,
+                );
+                audited.push(AuditReport {
+                    repo: stats.full_name.clone(),
+                    stats,
+                    verdict,
+                    fork_ratio_pct,
+                });
+            }
+            Err(err) => failed.push((repo.clone(), err.to_string())),
+        }
+    }
+    Ok(BatchReport {
+        total_entries,
+        audited,
+        failed,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -178,5 +388,23 @@ mod tests {
         assert!(text.contains("50.0%"));
         assert!(text.contains("EXTREME"));
         assert!(text.contains("heuristic"));
+    }
+    #[test]
+    fn marketplace_parse_handles_url_and_string_shapes() {
+        let json = r#"{"plugins": [
+            {"name": "a", "source": "owner/one"},
+            {"name": "b", "source": {"source": "git-subdir", "url": "https://github.com/owner/two.git", "path": "plugins/x", "ref": "main"}},
+            {"name": "c", "source": "./relative"},
+            {"name": "d", "source": {"source": "git-subdir", "repo": "owner/one"}},
+            {"name": "e", "source": {"source": "url", "url": "https://gitlab.com/nope/none.git"}}
+        ]}"#;
+        let (repos, total) = parse_marketplace_repos(json);
+        assert_eq!(total, 5);
+        assert_eq!(repos, vec!["owner/one".to_owned(), "owner/two".to_owned()]);
+    }
+
+    #[test]
+    fn marketplace_parse_rejects_garbage() {
+        assert_eq!(parse_marketplace_repos("nope"), (Vec::<String>::new(), 0));
     }
 }

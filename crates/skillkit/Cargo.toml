@@ -18,6 +18,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow.workspace = true
+base64 = "0.23.1"
 cas-kit.workspace = true
 clap.workspace = true
 fetch-kit.workspace = true
