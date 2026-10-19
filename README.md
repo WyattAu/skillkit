@@ -11,7 +11,19 @@ skillkit lint ./my-skill        # strict frontmatter + structure lint
 skillkit pack ./my-skill        # deterministic archive -> content-addressed store
 skillkit verify ./my-skill --hash <blake3> --store ~/.local/share/skillkit/store
 skillkit audit owner/repo       # engagement-integrity signals (fork-ratio heuristics)
+skillkit audit anthropics/claude-plugins-official --batch
+                                # audit every repo-plugin in a marketplace index
 ```
+
+## Batch mode / trust reports
+
+`audit --batch` parses a marketplace's `.claude-plugin/marketplace.json`,
+audits every repo-sourced plugin, and prints flagged-first evidence. The
+first run against Anthropic's official directory is checked in at
+[`reports/claude-plugins-official-2026-10-19.txt`](reports/claude-plugins-official-2026-10-19.txt):
+**227 of 315 entries audited — 1 EXTREME (`adobe/skills`, 41.8% fork
+ratio), 9 elevated** (Salesforce, Oracle, GCP, Databricks, Microsoft —
+the fork-to-customize vendor pattern).
 
 ## Why
 
