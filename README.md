@@ -1,5 +1,6 @@
 # skillkit
 
+[![crates.io](https://img.shields.io/crates/v/skillkit.svg)](https://crates.io/crates/skillkit) [![crates.io](https://img.shields.io/crates/v/skillkit-core.svg)](https://crates.io/crates/skillkit-core) [![crates.io](https://img.shields.io/crates/v/skillkit-store.svg)](https://crates.io/crates/skillkit-store)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.95+-orange.svg)](https://www.rust-lang.org/)
 
