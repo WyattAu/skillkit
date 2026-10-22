@@ -13,8 +13,20 @@ sometimes faster (one repo: 153.9% fork ratio; one org: 7 repos bursting
 farm, and every ranking surface consumes them raw.
 
 So we built skillkit: a CLI that lints/packages SKILL.md agent skills and
-audits engagement integrity. Today we ran `skillkit audit --batch`
-against Anthropic's official Claude plugin directory:
+audits engagement integrity — backed by a measurement engine that has
+snapshotted GitHub/HN/crates.io/HuggingFace daily for four days straight
+(6,381+ observations across 1,195 subjects). Today we ran
+`skillkit audit --batch` against Anthropic's official Claude plugin
+directory, and the same engine independently caught, over three days:
+
+- a **six-org clone farm** (same repo name `.github` across six throwaway
+  orgs, ~50% aggregate fork ratio)
+- a **three-org cluster** shipping "ARTEX" variants at up to **225.6%**
+  fork ratio (more forks than stars)
+- a **two-repo org** accelerating to **10.6k stars/day combined**
+- a vendor skills repo riding **57% fork ratio** at 1,125 stars
+
+The official directory audit itself:
 
 - 227 of 315 entries are git-repo sourced and auditable
 - 1 EXTREME (41.8% fork ratio), 9 elevated (22-34%) — mostly
