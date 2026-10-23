@@ -27,6 +27,17 @@ first run against Anthropic's official directory is checked in at
 ratio), 9 elevated** (Salesforce, Oracle, GCP, Databricks, Microsoft:
 the fork-to-customize vendor pattern).
 
+## Verifying audit skills
+
+The skill economy's fastest-rising category is security-audit skills —
+[Cloudflare's `security-audit-skill`](https://github.com/cloudflare/security-audit-skill)
+crossed 39k stars in a week. skillkit is the verification complement:
+`skillkit audit <repo>` scores engagement integrity (fork-ratio verdicts,
+clone-farm detection, org-burst signals) so you know *who shipped the
+skill and whether its stars are real*, and `skillkit lint` + `pack`
+validate that the skill itself is structurally sound before you load it
+into an agent.
+
 ## Why
 
 Agent skills are becoming the Dockerfiles of AI agents: and the ecosystem
