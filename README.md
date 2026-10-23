@@ -23,13 +23,13 @@ skillkit audit anthropics/claude-plugins-official --batch
 audits every repo-sourced plugin, and prints flagged-first evidence. The
 first run against Anthropic's official directory is checked in at
 [`reports/claude-plugins-official-2026-10-19.txt`](reports/claude-plugins-official-2026-10-19.txt):
-**227 of 315 entries audited — 1 EXTREME (`adobe/skills`, 41.8% fork
-ratio), 9 elevated** (Salesforce, Oracle, GCP, Databricks, Microsoft —
+**227 of 315 entries audited: 1 EXTREME (`adobe/skills`, 41.8% fork
+ratio), 9 elevated** (Salesforce, Oracle, GCP, Databricks, Microsoft:
 the fork-to-customize vendor pattern).
 
 ## Why
 
-Agent skills are becoming the Dockerfiles of AI agents — and the ecosystem
+Agent skills are becoming the Dockerfiles of AI agents: and the ecosystem
 has formats and marketplaces but no tooling layer:
 
 - **Lint** with unknown-field denial: the frontmatter grammar is tiny and
@@ -46,7 +46,7 @@ has formats and marketplaces but no tooling layer:
 
 | Crate | Role | Reuses |
 |---|---|---|
-| `skillkit-core` | parse + lint SKILL.md | — (zero-dep) |
+| `skillkit-core` | parse + lint SKILL.md | none (zero-dep) |
 | `skillkit-store` | canonical `SKILLPACK1` archives | [`cas-kit`](https://crates.io/crates/cas-kit) (BLAKE3 + zstd store) |
 | `skillkit` (CLI) | commands + `audit` | [`signalkit-integrity`](https://crates.io/crates/signalkit-integrity), [`fetch-kit`](https://crates.io/crates/fetch-kit) |
 
