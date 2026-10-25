@@ -1,7 +1,7 @@
 [package]
 name = "skillkit"
 description = "Tooling for the agent-skill economy: lint, package, verify, and audit SKILL.md skills"
-version = "0.1.3"
+version = "0.1.4"
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
