@@ -36,7 +36,7 @@ skillkit-core = { path = "crates/skillkit-core", version = "0.1.0" }
 skillkit-store = { path = "crates/skillkit-store", version = "0.1.0" }
 signalkit-integrity = "0.3"
 anyhow = "1"
-cas-kit = "0.2"
+cas-kit = "1"
 clap = { version = "4", features = ["derive"] }
 fetch-kit = "0.2"
 serde = { version = "1", features = ["derive"] }

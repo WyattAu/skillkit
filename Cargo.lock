@@ -143,9 +143,9 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "cas-kit"
-version = "0.2.1"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27854f776b6d7aed89b4b62c342a760d56149bdf6c2b8ade87e2d53aa4e4e45b"
+checksum = "49195d88fefddf60ab60d139b2ad4cd461c0a705ee36d8e8252e1a1da7fb2972"
 dependencies = [
  "blake3",
  "clap",
@@ -1390,7 +1390,7 @@ checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
 name = "skillkit"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "base64",
