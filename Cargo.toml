@@ -19,7 +19,7 @@ cognitive_complexity = "allow"
 too_many_arguments = "warn"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.95"
 authors = ["Wyatt Au"]
@@ -34,7 +34,7 @@ categories = ["development-tools", "command-line-utilities"]
 [workspace.dependencies]
 skillkit-core = { path = "crates/skillkit-core", version = "0.1.0" }
 skillkit-store = { path = "crates/skillkit-store", version = "0.1.0" }
-signalkit-integrity = "0.1.0"
+signalkit-integrity = "0.2"
 anyhow = "1"
 cas-kit = "0.2"
 clap = { version = "4", features = ["derive"] }
