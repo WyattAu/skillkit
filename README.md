@@ -29,7 +29,7 @@ the fork-to-customize vendor pattern).
 
 ## Verifying audit skills
 
-The skill economy's fastest-rising category is security-audit skills —
+The skill economy's fastest-rising category is security-audit skills -
 [Cloudflare's `security-audit-skill`](https://github.com/cloudflare/security-audit-skill)
 crossed 39k stars in a week. skillkit is the verification complement:
 `skillkit audit <repo>` scores engagement integrity (fork-ratio verdicts,
